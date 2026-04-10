@@ -8,8 +8,31 @@
 </head>
 <body>
   <div class="window-canvas">
-    <div class="widget" data-tauri-drag-region>
-      <span class="task-text" data-tauri-drag-region>What's your #1?</span>
+    <div class="widget">
+
+      <!-- Compact mode -->
+      <div class="compact-content" data-tauri-drag-region>
+        <span class="task-text">What's your #1?</span>
+      </div>
+
+      <!-- Expanded mode -->
+      <div class="expanded-content">
+        <div class="expanded-header" data-tauri-drag-region>
+          <span class="expanded-title">Top Focus</span>
+          <button class="btn-icon" id="btn-close" title="Collapse">✕</button>
+        </div>
+        <textarea class="task-input" id="task-input" placeholder="What's your #1 focus?" spellcheck="false"></textarea>
+        <div class="action-row">
+          <button class="btn-primary" id="btn-done">Done ✓</button>
+          <button class="btn-secondary" id="btn-clear">Clear</button>
+        </div>
+        <div class="history-list" id="history-list"></div>
+        <div class="opacity-row">
+          <span class="opacity-label">Opacity</span>
+          <input type="range" class="opacity-slider" id="opacity-slider" min="30" max="100" value="95">
+        </div>
+      </div>
+
     </div>
   </div>
   <script src="main.js"></script>
