@@ -29,7 +29,7 @@ Three phases take this from zero to a daily-driver macOS widget. Phase 1 produce
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Dev environment + Tauri scaffold (Rust install, Bun, Tauri v2 project, all plugins, capabilities, window config, LSUIElement, macOSPrivateApi, orange HTML/CSS shell)
+- [x] 01-01-PLAN.md -- Dev environment + Tauri scaffold (Rust install, Bun, Tauri v2 project, all plugins, capabilities, window config, LSUIElement, macOSPrivateApi, orange HTML/CSS shell)
 - [ ] 01-02-PLAN.md -- Window behavior (NSPanel non-activating via objc crate, all-Spaces visibility, click/drag disambiguation, position persistence with monitor validation)
 **UI hint**: yes
 
