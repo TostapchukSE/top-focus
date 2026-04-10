@@ -45,11 +45,11 @@ Plans:
   5. Marking a task complete shows a "Done" checkmark animation (~1.5s, green color shift) then clears to empty state with "What's your #1?" prompt
   6. Last 20 completed tasks are stored and surfaced for quick re-selection in expanded mode
   7. Opacity slider adjusts widget transparency (range 0.3-1.0, persisted)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Store schema + compact/expanded modes (tauri-plugin-store data model, compact mode UI, expanded mode UI, mode toggle with resize animation, opacity slider)
-- [ ] 02-02: Task lifecycle + history (task entry/confirm/collapse, Done animation, clear, empty state, Escape to cancel, task history with re-selection, position persistence of preferences)
+- [ ] 02-01-PLAN.md -- Compact/expanded modes with transitions (expanded mode HTML/CSS structure, mode toggle with sequenced window resize animation, opacity slider with persistence)
+- [ ] 02-02-PLAN.md -- Task lifecycle + history (task entry/confirm/collapse, Done completion animation, clear, empty state, Escape to cancel, task history with re-selection)
 **UI hint**: yes
 
 ### Phase 3: Polish, Shortcuts & Ship
@@ -92,6 +92,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Foundation | 0/2 | Not started | - |
+| 1. Foundation | 2/2 | Complete | 2026-04-10 |
 | 2. Core Task Loop | 0/2 | Not started | - |
 | 3. Polish, Shortcuts & Ship | 0/2 | Not started | - |
