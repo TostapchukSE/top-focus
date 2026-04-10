@@ -55,11 +55,10 @@ Phase 1 usage note: The compact widget shell (~300x60px) uses `16px` horizontal 
 |------|------|--------|-------------|
 | Task text (compact) | 17px | 700 (bold) | 1.3 |
 | Empty state prompt | 17px | 600 (semibold) | 1.3 |
-| Label / secondary | 13px | 400 (regular) | 1.4 |
 
-Phase 1 uses exactly 2 weights: **700** for the primary task text and **600** for the empty state prompt. Weight 400 is declared for Phase 2 use (labels, secondary text) but is not rendered in Phase 1.
+Phase 1 uses exactly 2 weights: **700** for the primary task text and **600** for the empty state prompt.
 
-Font sizes: 3 declared (13px, 17px). The 17px size is chosen as the midpoint of the REQUIREMENTS.md spec of "16-18px" — optimized for readability at arm's length on Retina displays while fitting comfortably in the 300px-wide compact shell with 16px horizontal padding on each side (268px usable text width).
+Font sizes: 1 declared (17px). The 17px size is chosen as the midpoint of the REQUIREMENTS.md spec of "16-18px" — optimized for readability at arm's length on Retina displays while fitting comfortably in the 300px-wide compact shell with 16px horizontal padding on each side (268px usable text width).
 
 Source: REQUIREMENTS.md MODE-01, DESIGN-02, DESIGN-03; FEATURES.md readability guidance
 
@@ -146,7 +145,6 @@ Single file: `main.css` (or `styles.css`). No preprocessor, no CSS framework.
   --font-size-label: 13px;
   --font-weight-bold: 700;
   --font-weight-semibold: 600;
-  --font-weight-regular: 400;
   --line-height-task: 1.3;
 
   /* Layout */
