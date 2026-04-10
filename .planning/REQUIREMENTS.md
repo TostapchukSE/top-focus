@@ -124,19 +124,23 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | WIN-01 through WIN-09 | Phase 1 | Pending |
+| BUILD-01 through BUILD-04 | Phase 1 | Pending |
 | MODE-01 through MODE-06 | Phase 2 | Pending |
 | TASK-01 through TASK-08 | Phase 2 | Pending |
+| DESIGN-01 through DESIGN-04 | Phase 2 | Pending |
 | KEYS-01 through KEYS-04 | Phase 3 | Pending |
 | BOOT-01 through BOOT-03 | Phase 3 | Pending |
-| DESIGN-01 through DESIGN-05 | Phase 2 | Pending |
 | PERF-01 through PERF-04 | Phase 3 | Pending |
-| BUILD-01 through BUILD-04 | Phase 1 | Pending |
+| DESIGN-05 (edge snapping) | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total
-- Mapped to phases: 40
-- Unmapped: 0 ✓
+- v1 requirements: 43 total
+- Mapped to phases: 43
+- Phase 1 (Foundation): 13 requirements
+- Phase 2 (Core Task Loop): 18 requirements
+- Phase 3 (Polish, Shortcuts & Ship): 12 requirements
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after initial definition*
+*Last updated: 2026-04-10 after roadmap creation*
