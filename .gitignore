@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Tauri build output
+src-tauri/target/
+
+# Signing secrets (real values - never commit)
+.env.signing
+
+# Bun
+bun.lock
+
+# macOS
+.DS_Store
