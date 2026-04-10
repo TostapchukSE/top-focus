@@ -10,7 +10,7 @@ Three phases take this from zero to a daily-driver macOS widget. Phase 1 produce
 
 ## Phases
 
-- [ ] **Phase 1: Foundation -- Tauri Project + Window Shell** - Running Tauri v2 app with correct macOS window behavior and visual shell
+- [x] **Phase 1: Foundation -- Tauri Project + Window Shell** - Running Tauri v2 app with correct macOS window behavior and visual shell (completed 2026-04-10)
 - [ ] **Phase 2: Core Task Loop** - Full task lifecycle: enter, display, complete, history across compact and expanded modes
 - [ ] **Phase 3: Polish, Shortcuts & Ship** - Global shortcuts, launch at login, edge snapping, performance audit, signed build
 
@@ -30,7 +30,7 @@ Three phases take this from zero to a daily-driver macOS widget. Phase 1 produce
 
 Plans:
 - [x] 01-01-PLAN.md -- Dev environment + Tauri scaffold (Rust install, Bun, Tauri v2 project, all plugins, capabilities, window config, LSUIElement, macOSPrivateApi, orange HTML/CSS shell)
-- [ ] 01-02-PLAN.md -- Window behavior (NSPanel non-activating via objc crate, all-Spaces visibility, click/drag disambiguation, position persistence with monitor validation)
+- [x] 01-02-PLAN.md -- Window behavior (NSPanel non-activating via objc crate, all-Spaces visibility, click/drag disambiguation, position persistence with monitor validation)
 **UI hint**: yes
 
 ### Phase 2: Core Task Loop
@@ -84,7 +84,7 @@ Plans:
 
 | # | Risk | Severity | Mitigation |
 |---|------|----------|------------|
-| 1 | **Focus stealing on click** -- default Tauri window is activating; clicking it yanks focus from the user's editor/browser. This is the make-or-break UX issue. | Critical | Implement NSPanel non-activating behavior via `objc` crate on day one (Phase 1, Plan 2). Do not proceed to Phase 2 until this works. Verified approach: access raw NSWindow via `window.ns_window()`, set `styleMask` to include `.nonactivatingPanel`. |
+| 1 | 2/2 | Complete   | 2026-04-10 |
 | 2 | **Tauri v2 capabilities/permissions misconfiguration** -- missing permissions in `capabilities/default.json` cause silent runtime failures. #1 source of "works in dev, breaks in prod." | High | Configure all plugin permissions in Phase 1 scaffolding (Plan 1). Test each permission explicitly. Required: `core:default`, `store:default`, `global-shortcut:default`, `autostart:default`, `window:allow-set-size`, `window:allow-set-position`, etc. |
 | 3 | **Code signing left to last minute** -- unsigned builds blocked by Gatekeeper on macOS Sequoia+. "I'll sign it later" leads to a painful scramble when the app is otherwise done. | High | BUILD-04 is in Phase 1 scope (configure early). Phase 3 Plan 2 completes notarization and universal binary. Signing infrastructure set up before feature work, not after. |
 

@@ -10,14 +10,14 @@
 ### Window Behavior
 
 - [x] **WIN-01**: Widget is always-on-top, floating above all normal windows (maps to macOS `NSWindow.Level.floating`)
-- [ ] **WIN-02**: Widget does NOT steal focus when clicked — non-activating window behavior (NSPanel pattern via objc crate, critical day-one requirement)
-- [ ] **WIN-03**: Widget is visible on all Spaces / virtual desktops (`visibleOnAllWorkspaces: true` + `NSWindowCollectionBehavior.canJoinAllSpaces`)
+- [x] **WIN-02**: Widget does NOT steal focus when clicked — non-activating window behavior (NSPanel pattern via objc crate, critical day-one requirement)
+- [x] **WIN-03**: Widget is visible on all Spaces / virtual desktops (`visibleOnAllWorkspaces: true` + `NSWindowCollectionBehavior.canJoinAllSpaces`)
 - [x] **WIN-04**: Widget has no Dock icon and does not appear in Cmd+Tab (`LSUIElement: true`)
 - [x] **WIN-05**: Widget is frameless, transparent background, rounded corners (12px), subtle CSS drop-shadow (`decorations: false`, `transparent: true`, `macOSPrivateApi: true`)
-- [ ] **WIN-06**: Widget is draggable by click-and-drag anywhere on its surface in compact mode; drag region restricted to header in expanded mode
-- [ ] **WIN-07**: Click vs drag disambiguated — a quick mousedown+mouseup without movement triggers expand, not a drag
-- [ ] **WIN-08**: Widget position is saved on move and restored on next launch (stored via tauri-plugin-store)
-- [ ] **WIN-09**: On launch, saved position is validated against current monitor bounds — falls back to primary display corner if off-screen
+- [x] **WIN-06**: Widget is draggable by click-and-drag anywhere on its surface in compact mode; drag region restricted to header in expanded mode
+- [x] **WIN-07**: Click vs drag disambiguated — a quick mousedown+mouseup without movement triggers expand, not a drag
+- [x] **WIN-08**: Widget position is saved on move and restored on next launch (stored via tauri-plugin-store)
+- [x] **WIN-09**: On launch, saved position is validated against current monitor bounds — falls back to primary display corner if off-screen
 
 ### Display Modes
 
