@@ -26,11 +26,11 @@ Three phases take this from zero to a daily-driver macOS widget. Phase 1 produce
   3. Widget is visible on all Spaces / virtual desktops -- switching Spaces does not lose it
   4. Widget can be dragged to any position; position is saved and restored correctly on next launch (including off-screen fallback validation)
   5. Click vs drag is cleanly disambiguated -- a quick click without movement does not trigger a drag
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Dev environment + Tauri scaffold (Rust, Bun, plugins, capabilities, window config, LSUIElement, macOSPrivateApi)
-- [ ] 01-02: Window behavior + visual shell (NSPanel non-activating via objc, all-Spaces, drag regions, click/drag disambiguation, position persistence, orange HTML/CSS shell)
+- [ ] 01-01-PLAN.md -- Dev environment + Tauri scaffold (Rust install, Bun, Tauri v2 project, all plugins, capabilities, window config, LSUIElement, macOSPrivateApi, orange HTML/CSS shell)
+- [ ] 01-02-PLAN.md -- Window behavior (NSPanel non-activating via objc crate, all-Spaces visibility, click/drag disambiguation, position persistence with monitor validation)
 **UI hint**: yes
 
 ### Phase 2: Core Task Loop
