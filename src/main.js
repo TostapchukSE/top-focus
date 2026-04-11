@@ -6,6 +6,7 @@ const TASK_KEY      = 'currentTask';
 const HISTORY_KEY   = 'taskHistory';
 const PREFS_KEY     = 'preferences';
 const MAX_HISTORY   = 20;
+const MAX_TASK_LEN  = 200;
 const DRAG_THRESHOLD = 5;    // px
 const SAVE_DEBOUNCE  = 500;  // ms
 
@@ -38,40 +39,77 @@ function LogicalPosition(x, y) {
 // ── Store ──────────────────────────────────────────────────
 
 async function initStore() {
-  store = await window.__TAURI__.store.Store.load('store.json');
+  try {
+    store = await window.__TAURI__.store.Store.load('store.json');
+    // Validate store is functional by reading a key
+    await store.get(POSITION_KEY);
+  } catch (err) {
+    console.error('Store corrupted or unreadable, resetting:', err);
+    // Create a fresh store — old data is lost but app is functional
+    store = await window.__TAURI__.store.Store.load('store.json');
+    await store.clear();
+    await store.save();
+  }
+}
+
+/** Safely read from store with fallback */
+async function storeGet(key, fallback = null) {
+  try {
+    const val = await store.get(key);
+    return val ?? fallback;
+  } catch (err) {
+    console.error(`Store read error for "${key}":`, err);
+    return fallback;
+  }
+}
+
+/** Safely write to store */
+async function storeSet(key, value) {
+  try {
+    await store.set(key, value);
+    await store.save();
+  } catch (err) {
+    console.error(`Store write error for "${key}":`, err);
+  }
 }
 
 // ── Position persistence (WIN-08, WIN-09) ─────────────────
 
 async function restorePosition() {
-  const saved = await store.get(POSITION_KEY);
+  const saved = await storeGet(POSITION_KEY);
   if (!saved || typeof saved.x !== 'number') return;
 
   const monitors = await window.__TAURI__.window.availableMonitors();
   if (!monitors?.length) return;
 
+  // Monitor positions/sizes from Tauri are in physical pixels;
+  // convert to logical using each monitor's scaleFactor.
   const onScreen = monitors.some(m => {
-    const r = m.position.x + m.size.width;
-    const b = m.position.y + m.size.height;
-    return saved.x >= m.position.x - 100 && saved.x < r &&
-           saved.y >= m.position.y - 50  && saved.y < b;
+    const sf = m.scaleFactor || 1;
+    const logicalW = m.size.width  / sf;
+    const logicalH = m.size.height / sf;
+    const logicalX = m.position.x  / sf;
+    const logicalY = m.position.y  / sf;
+    const r = logicalX + logicalW;
+    const b = logicalY + logicalH;
+    return saved.x >= logicalX - 100 && saved.x < r &&
+           saved.y >= logicalY - 50  && saved.y < b;
   });
 
   if (onScreen) {
     await getWindow().setPosition(LogicalPosition(saved.x, saved.y));
   } else {
     const p = monitors[0];
-    const x = p.position.x + p.size.width - SIZE_COMPACT.w - 12;
-    const y = p.position.y + 12;
+    const sf = p.scaleFactor || 1;
+    const x = (p.position.x / sf) + (p.size.width / sf) - SIZE_COMPACT.w - 12;
+    const y = (p.position.y / sf) + 12;
     await getWindow().setPosition(LogicalPosition(x, y));
-    await store.set(POSITION_KEY, { x, y });
-    await store.save();
+    await storeSet(POSITION_KEY, { x, y });
   }
 }
 
 async function savePosition(x, y) {
-  await store.set(POSITION_KEY, { x, y });
-  await store.save();
+  await storeSet(POSITION_KEY, { x, y });
 }
 
 function debouncedSavePosition(x, y) {
@@ -80,43 +118,60 @@ function debouncedSavePosition(x, y) {
 }
 
 async function listenForMoves() {
+  let throttled = false;
   await getWindow().onMoved(({ payload }) => {
+    if (throttled) return;
+    throttled = true;
+    setTimeout(() => { throttled = false; }, 100);
     debouncedSavePosition(payload.x, payload.y);
   });
 }
 
 // ── Expand / Collapse (MODE-01 through MODE-04) ───────────
 
+/** Helper: wait for ms */
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function expandWidget() {
   if (isExpanded || isAnimating) return;
   isAnimating = true;
 
-  await getWindow().setSize(LogicalSize(SIZE_EXPANDED.w, SIZE_EXPANDED.h));
+  try {
+    await getWindow().setSize(LogicalSize(SIZE_EXPANDED.w, SIZE_EXPANDED.h));
 
-  // Brief pause so window resize settles before CSS animates in
-  setTimeout(() => {
+    // Brief pause so window resize settles before CSS animates in
+    await wait(30);
+
     document.querySelector('.widget').classList.add('expanded');
-    isExpanded  = true;
-    isAnimating = false;
+    isExpanded = true;
 
     const input = document.getElementById('task-input');
     input.value = currentTask?.text ?? '';
     // Focus after CSS transition
-    setTimeout(() => { input.focus(); input.select(); }, 150);
-  }, 30);
+    await wait(150);
+    input.focus();
+    input.select();
+  } finally {
+    isAnimating = false;
+  }
 }
 
 async function collapseWidget() {
   if (!isExpanded || isAnimating) return;
   isAnimating = true;
 
-  document.querySelector('.widget').classList.remove('expanded');
+  try {
+    document.querySelector('.widget').classList.remove('expanded');
 
-  setTimeout(async () => {
+    await wait(200);
+
     await getWindow().setSize(LogicalSize(SIZE_COMPACT.w, SIZE_COMPACT.h));
-    isExpanded  = false;
+    isExpanded = false;
+  } finally {
     isAnimating = false;
-  }, 200);
+  }
 }
 
 // ── Click vs drag (WIN-07) ────────────────────────────────
@@ -146,20 +201,37 @@ function initClickDragDisambiguation() {
 
 function handleWidgetClick(e) {
   if (isExpanded) return;
-  // Don't expand if the click came from inside expanded content
   expandWidget();
 }
 
 // ── Task display ──────────────────────────────────────────
 
+// Scale font size so text fits the compact pill regardless of length
+function adaptTaskFontSize(span, text) {
+  const len = text.length;
+  let size, lh;
+  if      (len <= 22) { size = '17px'; lh = '1.25'; }
+  else if (len <= 40) { size = '14px'; lh = '1.25'; }
+  else if (len <= 60) { size = '13px'; lh = '1.2';  }
+  else                { size = '12px'; lh = '1.2';  }
+  span.style.fontSize   = size;
+  span.style.lineHeight = lh;
+}
+
 function renderCompactTask() {
-  const span = document.querySelector('.task-text');
+  const span   = document.querySelector('.task-text');
+  const widget = document.querySelector('.widget');
   if (currentTask) {
     span.textContent = currentTask.text;
     span.classList.add('has-task');
+    widget.classList.add('has-task');
+    adaptTaskFontSize(span, currentTask.text);
   } else {
-    span.textContent = "What's your #1?";
+    span.textContent = "What's your top focus?";
     span.classList.remove('has-task');
+    widget.classList.remove('has-task');
+    span.style.fontSize   = '';
+    span.style.lineHeight = '';
   }
 }
 
@@ -167,17 +239,16 @@ function renderCompactTask() {
 
 async function confirmTask(text) {
   if (!text.trim()) return;
-  currentTask = { text: text.trim(), createdAt: new Date().toISOString() };
-  await store.set(TASK_KEY, currentTask);
-  await store.save();
+  const trimmed = text.trim().slice(0, MAX_TASK_LEN);
+  currentTask = { text: trimmed, createdAt: new Date().toISOString() };
+  await storeSet(TASK_KEY, currentTask);
   renderCompactTask();
   collapseWidget();
 }
 
 async function clearTask() {
   currentTask = null;
-  await store.set(TASK_KEY, null);
-  await store.save();
+  await storeSet(TASK_KEY, null);
   renderCompactTask();
   collapseWidget();
 }
@@ -191,41 +262,64 @@ async function completeTask() {
   await addToHistory(task);
 
   currentTask = null;
-  await store.set(TASK_KEY, null);
-  await store.save();
+  await storeSet(TASK_KEY, null);
 
   // Collapse first, then show completion flash in compact mode
   isAnimating = true;
-  document.querySelector('.widget').classList.remove('expanded');
+  try {
+    document.querySelector('.widget').classList.remove('expanded');
 
-  setTimeout(async () => {
+    await wait(200);
+
     await getWindow().setSize(LogicalSize(SIZE_COMPACT.w, SIZE_COMPACT.h));
-    isExpanded  = false;
+    isExpanded = false;
+  } finally {
     isAnimating = false;
+  }
 
-    // Show green "Done ✓" state
-    const span   = document.querySelector('.task-text');
-    const widget = document.querySelector('.widget');
-    span.textContent = 'Done ✓';
-    widget.style.background = 'var(--color-green)';
+  // Show green "Done ✓" state
+  const span   = document.querySelector('.task-text');
+  const widget = document.querySelector('.widget');
+  span.textContent = 'Done \u2713';
+  widget.style.background = 'var(--color-green)';
 
-    setTimeout(() => {
-      widget.style.background = '';
-      renderCompactTask();
-    }, 1500);
-  }, 200);
+  await wait(1500);
+
+  widget.style.background = '';
+  renderCompactTask();
+}
+
+async function quickCompleteTask() {
+  if (!currentTask) return;
+
+  const task = currentTask;
+  await addToHistory(task);
+
+  currentTask = null;
+  await storeSet(TASK_KEY, null);
+
+  // Show green "Done ✓" in compact mode briefly, then return to empty state
+  const span   = document.querySelector('.task-text');
+  const widget = document.querySelector('.widget');
+  span.textContent = 'Done \u2713';
+  widget.classList.remove('has-task');
+  widget.style.background = 'var(--color-green)';
+
+  await wait(2000);
+
+  widget.style.background = '';
+  renderCompactTask();
 }
 
 // ── History (TASK-07) ─────────────────────────────────────
 
 async function addToHistory(task) {
-  let history = (await store.get(HISTORY_KEY)) ?? [];
+  let history = await storeGet(HISTORY_KEY, []);
   // Remove duplicate if same text already in history
   history = history.filter(h => h.text !== task.text);
   history.unshift(task);
   if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
-  await store.set(HISTORY_KEY, history);
-  await store.save();
+  await storeSet(HISTORY_KEY, history);
   renderHistory(history);
 }
 
@@ -250,7 +344,7 @@ function renderHistory(history) {
 // ── Opacity (MODE-06) ─────────────────────────────────────
 
 async function initOpacity() {
-  const prefs   = (await store.get(PREFS_KEY)) ?? {};
+  const prefs   = await storeGet(PREFS_KEY, {});
   const opacity = prefs.opacity ?? 0.95;
   applyOpacity(opacity);
 
@@ -259,10 +353,9 @@ async function initOpacity() {
   slider.addEventListener('input', async () => {
     const val = slider.value / 100;
     applyOpacity(val);
-    const p = (await store.get(PREFS_KEY)) ?? {};
+    const p = await storeGet(PREFS_KEY, {});
     p.opacity = val;
-    await store.set(PREFS_KEY, p);
-    await store.save();
+    await storeSet(PREFS_KEY, p);
   });
 }
 
@@ -277,6 +370,14 @@ function initControls() {
   const btnDone   = document.getElementById('btn-done');
   const btnClear  = document.getElementById('btn-clear');
   const btnClose  = document.getElementById('btn-close');
+  const btnCheck  = document.getElementById('btn-check');
+
+  // Prevent compact-view click from expanding; trigger quick complete
+  btnCheck.addEventListener('mousedown', (e) => e.stopPropagation());
+  btnCheck.addEventListener('click', (e) => {
+    e.stopPropagation();
+    quickCompleteTask();
+  });
 
   // Enter confirms, Shift+Enter adds newline (task is single-line concept but let's keep Enter clean)
   taskInput.addEventListener('keydown', (e) => {
@@ -321,6 +422,67 @@ function initControls() {
   });
 }
 
+// ── Right-click context menu (Quit) ──────────────────────
+
+let contextMenuEl = null;
+
+function initContextMenu() {
+  // Build a custom context menu (no native confirm() — it doesn't work
+  // correctly with non-activating NSPanel windows).
+  const menu = document.createElement('div');
+  menu.className = 'context-menu';
+  menu.innerHTML = '<button class="context-menu-item" data-action="quit">Quit Top Focus</button>';
+  menu.style.display = 'none';
+  document.body.appendChild(menu);
+  contextMenuEl = menu;
+
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    menu.style.left = e.clientX + 'px';
+    menu.style.top  = e.clientY + 'px';
+    menu.style.display = 'block';
+  });
+
+  menu.addEventListener('click', (e) => {
+    const action = e.target.dataset?.action;
+    if (action === 'quit') {
+      // Flush any pending position save before quitting
+      flushAndQuit();
+    }
+    menu.style.display = 'none';
+  });
+
+  // Dismiss on click elsewhere or Escape
+  document.addEventListener('mousedown', (e) => {
+    if (!menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      menu.style.display = 'none';
+    }
+  });
+}
+
+/** Flush pending position save, then quit gracefully */
+async function flushAndQuit() {
+  // If there's a pending debounced position save, flush it now
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+    try {
+      const pos = await storeGet(POSITION_KEY);
+      if (pos) {
+        await store.set(POSITION_KEY, pos);
+        await store.save();
+      }
+    } catch (_) {
+      // Best-effort; don't block quit
+    }
+  }
+  window.__TAURI__.core.invoke('quit');
+}
+
 // ── Init ──────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -330,18 +492,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     await listenForMoves();
 
     // Load persisted task
-    currentTask = await store.get(TASK_KEY);
+    currentTask = await storeGet(TASK_KEY);
     renderCompactTask();
 
     // Load history
-    const history = await store.get(HISTORY_KEY);
+    const history = await storeGet(HISTORY_KEY, []);
     renderHistory(history);
 
     await initOpacity();
     initControls();
     initClickDragDisambiguation();
-
-    console.log('Top Focus initialized');
+    initContextMenu();
   } catch (err) {
     console.error('Init error:', err);
   }

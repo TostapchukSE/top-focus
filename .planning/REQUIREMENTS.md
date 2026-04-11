@@ -12,7 +12,7 @@
 - [x] **WIN-01**: Widget is always-on-top, floating above all normal windows (maps to macOS `NSWindow.Level.floating`)
 - [x] **WIN-02**: Widget does NOT steal focus when clicked — non-activating window behavior (NSPanel pattern via objc crate, critical day-one requirement)
 - [x] **WIN-03**: Widget is visible on all Spaces / virtual desktops (`visibleOnAllWorkspaces: true` + `NSWindowCollectionBehavior.canJoinAllSpaces`)
-- [x] **WIN-04**: Widget has no Dock icon and does not appear in Cmd+Tab (`LSUIElement: true`)
+- [x] **WIN-04**: Widget has no Dock icon and does not appear in Cmd+Tab (`LSUIElement: true` in Info.plist + `setActivationPolicy:Accessory` called post-setup to cover dev mode)
 - [x] **WIN-05**: Widget is frameless, transparent background, rounded corners (12px), subtle CSS drop-shadow (`decorations: false`, `transparent: true`, `macOSPrivateApi: true`)
 - [x] **WIN-06**: Widget is draggable by click-and-drag anywhere on its surface in compact mode; drag region restricted to header in expanded mode
 - [x] **WIN-07**: Click vs drag disambiguated — a quick mousedown+mouseup without movement triggers expand, not a drag
@@ -21,23 +21,23 @@
 
 ### Display Modes
 
-- [ ] **MODE-01**: Compact mode: ~300×60px, shows current task text (bold, ~16-18px, white/near-white on orange `#FF6B2B`), readable at arm's length
-- [ ] **MODE-02**: Expanded mode: ~400×200px, shows full task text, text input for editing, action buttons (Done, Clear)
-- [ ] **MODE-03**: Compact → expanded transition: window resizes first, CSS content animates in (150-250ms, ease-out)
-- [ ] **MODE-04**: Expanded → compact transition: CSS content animates out, then window shrinks (150-250ms, ease-out)
-- [ ] **MODE-05**: Long task text truncates cleanly in compact mode (CSS ellipsis); full text visible in expanded mode
-- [ ] **MODE-06**: Opacity/transparency slider (affects overall widget opacity, range 0.3–1.0, default 0.95)
+- [x] **MODE-01**: Compact mode: ~300×60px, shows current task text (bold, ~16-18px, white/near-white on orange `#FF6B2B`), readable at arm's length
+- [x] **MODE-02**: Expanded mode: ~400×200px, shows full task text, text input for editing, action buttons (Done, Clear)
+- [x] **MODE-03**: Compact → expanded transition: window resizes first, CSS content animates in (150-250ms, ease-out)
+- [x] **MODE-04**: Expanded → compact transition: CSS content animates out, then window shrinks (150-250ms, ease-out)
+- [x] **MODE-05**: Long task text truncates cleanly in compact mode (CSS ellipsis); full text visible in expanded mode
+- [x] **MODE-06**: Opacity/transparency slider (affects overall widget opacity, range 0.3–1.0, default 0.95)
 
 ### Task Lifecycle
 
-- [ ] **TASK-01**: User can enter a task as free text (any length) via expanded mode text input
-- [ ] **TASK-02**: Pressing Enter or clicking confirm saves the task and collapses to compact mode
-- [ ] **TASK-03**: Clicking widget (or using keyboard shortcut) expands to show full text and action buttons
-- [ ] **TASK-04**: Pressing Escape in expanded mode collapses back to compact without saving changes
-- [ ] **TASK-05**: User can mark task complete — widget shows brief "Done ✓" visual state (~1.5 seconds: checkmark + color shift to green) then clears
-- [ ] **TASK-06**: After clearing, widget shows empty state prompt: "What's your #1?" — warm, inviting, not nagging
-- [ ] **TASK-07**: Last 20 completed tasks stored in history and surfaced for quick re-selection in expanded mode
-- [ ] **TASK-08**: User can clear the current task without marking it complete (returns to empty state)
+- [x] **TASK-01**: User can enter a task as free text (up to 200 chars) via expanded mode text input
+- [x] **TASK-02**: Pressing Enter or clicking confirm saves the task and collapses to compact mode
+- [x] **TASK-03**: Clicking widget (or using keyboard shortcut) expands to show full text and action buttons
+- [x] **TASK-04**: Pressing Escape in expanded mode collapses back to compact without saving changes
+- [x] **TASK-05**: User can mark task complete — widget shows brief "Done ✓" visual state (~1.5 seconds: checkmark + color shift to green) then clears
+- [x] **TASK-06**: After clearing, widget shows empty state prompt: "What's your top focus?" — warm, inviting, not nagging
+- [x] **TASK-07**: Last 20 completed tasks stored in history and surfaced for quick re-selection in expanded mode
+- [x] **TASK-08**: User can clear the current task without marking it complete (returns to empty state)
 
 ### Keyboard Shortcuts
 
@@ -54,10 +54,10 @@
 
 ### Design
 
-- [ ] **DESIGN-01**: Orange accent color `#FF6B2B` as the widget background (or strong border) — warm, saturated, distinctive
-- [ ] **DESIGN-02**: High-contrast white/near-white text on orange — accessible contrast ratio
-- [ ] **DESIGN-03**: System font stack (`-apple-system, BlinkMacSystemFont, system-ui`) — feels native, no bundled fonts
-- [ ] **DESIGN-04**: Dark mode: widget uses its own dark + orange design (does not follow system light/dark toggle in v1 — always dark style)
+- [x] **DESIGN-01**: Orange accent color `#FF6B2B` as the widget background (or strong border) — warm, saturated, distinctive
+- [x] **DESIGN-02**: High-contrast white/near-white text on orange — accessible contrast ratio
+- [x] **DESIGN-03**: System font stack (`-apple-system, BlinkMacSystemFont, system-ui`) — feels native, no bundled fonts
+- [x] **DESIGN-04**: Dark mode: widget uses its own dark + orange design (does not follow system light/dark toggle in v1 — always dark style)
 - [ ] **DESIGN-05**: Edge snapping — widget magnetically snaps to nearest screen edge/corner when dragged within threshold (~20px), with small margin from edge (~12px)
 
 ### Performance & Quality
@@ -123,11 +123,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WIN-01 through WIN-09 | Phase 1 | Pending |
-| BUILD-01 through BUILD-04 | Phase 1 | Pending |
-| MODE-01 through MODE-06 | Phase 2 | Pending |
-| TASK-01 through TASK-08 | Phase 2 | Pending |
-| DESIGN-01 through DESIGN-04 | Phase 2 | Pending |
+| WIN-01 through WIN-09 | Phase 1 | ✅ Complete |
+| BUILD-01 through BUILD-04 | Phase 1 | ✅ Complete |
+| MODE-01 through MODE-06 | Phase 2 | ✅ Complete |
+| TASK-01 through TASK-08 | Phase 2 | ✅ Complete |
+| DESIGN-01 through DESIGN-04 | Phase 2 | ✅ Complete |
 | KEYS-01 through KEYS-04 | Phase 3 | Pending |
 | BOOT-01 through BOOT-03 | Phase 3 | Pending |
 | PERF-01 through PERF-04 | Phase 3 | Pending |
@@ -136,11 +136,11 @@
 **Coverage:**
 - v1 requirements: 43 total
 - Mapped to phases: 43
-- Phase 1 (Foundation): 13 requirements
-- Phase 2 (Core Task Loop): 18 requirements
-- Phase 3 (Polish, Shortcuts & Ship): 12 requirements
+- Phase 1 (Foundation): 13 requirements — ✅ Complete
+- Phase 2 (Core Task Loop): 18 requirements — ✅ Complete
+- Phase 3 (Polish, Shortcuts & Ship): 12 requirements — Pending
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after roadmap creation*
+*Last updated: 2026-04-11 — Phase 2 complete*
