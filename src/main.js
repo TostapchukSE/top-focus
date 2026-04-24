@@ -6,7 +6,7 @@ const TASK_KEY      = 'currentTask';
 const HISTORY_KEY   = 'taskHistory';
 const PREFS_KEY     = 'preferences';
 const MAX_HISTORY   = 20;
-const MAX_TASK_LEN  = 200;
+const MAX_TASK_LEN  = 150;
 const DRAG_THRESHOLD = 5;    // px
 const SAVE_DEBOUNCE  = 500;  // ms
 
@@ -176,46 +176,76 @@ async function collapseWidget() {
 
 // ── Click vs drag (WIN-07) ────────────────────────────────
 
-let mouseDownPos  = null;
-let mouseDownTime = 0;
-
 function initClickDragDisambiguation() {
-  const widget = document.querySelector('.widget');
+  const compactContent = document.querySelector('.compact-content');
 
-  widget.addEventListener('mousedown', (e) => {
-    mouseDownPos  = { x: e.clientX, y: e.clientY };
-    mouseDownTime = Date.now();
-  });
+  compactContent.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button')) return;
 
-  widget.addEventListener('mouseup', (e) => {
-    if (!mouseDownPos) return;
-    const dx = e.clientX - mouseDownPos.x;
-    const dy = e.clientY - mouseDownPos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const ms   = Date.now() - mouseDownTime;
-    mouseDownPos  = null;
-    mouseDownTime = 0;
-    if (dist < DRAG_THRESHOLD && ms < 300) handleWidgetClick(e);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let dragging = false;
+
+    function onMove(ev) {
+      if (dragging) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+        dragging = true;
+        getWindow().startDragging();
+        cleanup();
+      }
+    }
+
+    function onUp() {
+      cleanup();
+      if (!dragging && !isExpanded) expandWidget();
+    }
+
+    function cleanup() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 }
 
-function handleWidgetClick(e) {
+function handleWidgetClick() {
   if (isExpanded) return;
   expandWidget();
 }
 
 // ── Task display ──────────────────────────────────────────
 
-// Scale font size so text fits the compact pill regardless of length
+// Scale font size so text wraps and fits the compact pill's box.
+// Measures actual rendered height — not a char-count heuristic, since
+// "MMMMM" and "iiiii" render very differently at the same length.
 function adaptTaskFontSize(span, text) {
-  const len = text.length;
-  let size, lh;
-  if      (len <= 22) { size = '17px'; lh = '1.25'; }
-  else if (len <= 40) { size = '14px'; lh = '1.25'; }
-  else if (len <= 60) { size = '13px'; lh = '1.2';  }
-  else                { size = '12px'; lh = '1.2';  }
-  span.style.fontSize   = size;
-  span.style.lineHeight = lh;
+  const container = span.parentElement; // .compact-content
+  // Available height inside compact-content (60px widget, no vertical padding).
+  // Leave 2px slack so descenders don't clip.
+  const availH = container.clientHeight - 2;
+
+  const candidates = [
+    { size: 17, lh: 1.25 },
+    { size: 15, lh: 1.25 },
+    { size: 14, lh: 1.2  },
+    { size: 13, lh: 1.2  },
+    { size: 12, lh: 1.2  },
+    { size: 11, lh: 1.2  },
+    { size: 10, lh: 1.15 },
+  ];
+
+  for (const { size, lh } of candidates) {
+    span.style.fontSize   = size + 'px';
+    span.style.lineHeight = String(lh);
+    // Force reflow so getBoundingClientRect reflects the new size
+    void span.offsetHeight;
+    if (span.getBoundingClientRect().height <= availH) return;
+  }
+  // Fell through — smallest candidate applied; extreme tasks just clip.
 }
 
 function renderCompactTask() {
@@ -244,49 +274,6 @@ async function confirmTask(text) {
   await storeSet(TASK_KEY, currentTask);
   renderCompactTask();
   collapseWidget();
-}
-
-async function clearTask() {
-  currentTask = null;
-  await storeSet(TASK_KEY, null);
-  renderCompactTask();
-  collapseWidget();
-}
-
-async function completeTask() {
-  if (!currentTask) return;
-
-  const task = currentTask;
-
-  // Add to history before clearing
-  await addToHistory(task);
-
-  currentTask = null;
-  await storeSet(TASK_KEY, null);
-
-  // Collapse first, then show completion flash in compact mode
-  isAnimating = true;
-  try {
-    document.querySelector('.widget').classList.remove('expanded');
-
-    await wait(200);
-
-    await getWindow().setSize(LogicalSize(SIZE_COMPACT.w, SIZE_COMPACT.h));
-    isExpanded = false;
-  } finally {
-    isAnimating = false;
-  }
-
-  // Show green "Done ✓" state
-  const span   = document.querySelector('.task-text');
-  const widget = document.querySelector('.widget');
-  span.textContent = 'Done \u2713';
-  widget.style.background = 'var(--color-green)';
-
-  await wait(1500);
-
-  widget.style.background = '';
-  renderCompactTask();
 }
 
 async function quickCompleteTask() {
@@ -368,7 +355,6 @@ function applyOpacity(val) {
 function initControls() {
   const taskInput = document.getElementById('task-input');
   const btnDone   = document.getElementById('btn-done');
-  const btnClear  = document.getElementById('btn-clear');
   const btnClose  = document.getElementById('btn-close');
   const btnCheck  = document.getElementById('btn-check');
 
@@ -392,19 +378,11 @@ function initControls() {
     }
   });
 
-  // Done button: confirm if no task, complete if task exists
+  // "Set focus" — save the entered text and collapse back to the widget.
+  // Clearing the focus is handled only by the hover checkmark in compact view.
   btnDone.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (!currentTask) {
-      confirmTask(taskInput.value);
-    } else {
-      completeTask();
-    }
-  });
-
-  btnClear.addEventListener('click', (e) => {
-    e.stopPropagation();
-    clearTask();
+    confirmTask(taskInput.value);
   });
 
   btnClose.addEventListener('click', (e) => {

@@ -11,7 +11,7 @@
     <div class="widget">
 
       <!-- Compact mode -->
-      <div class="compact-content" data-tauri-drag-region>
+      <div class="compact-content">
         <span class="task-text">What's your top focus?</span>
         <button class="btn-check" id="btn-check" title="Mark done">✓</button>
       </div>
@@ -22,10 +22,9 @@
           <span class="expanded-title">Top Focus</span>
           <button class="btn-icon" id="btn-close" title="Collapse">✕</button>
         </div>
-        <textarea class="task-input" id="task-input" placeholder="What's your top focus?" spellcheck="false" maxlength="200"></textarea>
+        <textarea class="task-input" id="task-input" placeholder="What's your top focus?" spellcheck="false" maxlength="150"></textarea>
         <div class="action-row">
-          <button class="btn-primary" id="btn-done">Done ✓</button>
-          <button class="btn-secondary" id="btn-clear">Clear</button>
+          <button class="btn-primary" id="btn-done">Set focus</button>
         </div>
         <div class="history-list" id="history-list"></div>
         <div class="opacity-row">

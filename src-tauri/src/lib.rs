@@ -29,6 +29,7 @@ pub fn run() {
 
             // --- System tray with menu ---
             {
+                use tauri::image::Image;
                 use tauri::menu::{Menu, MenuItem};
                 use tauri::tray::TrayIconBuilder;
                 use tauri::Manager;
@@ -38,10 +39,8 @@ pub fn run() {
                     MenuItem::with_id(app, "quit", "Quit Top Focus", true, None::<&str>)?;
                 let menu = Menu::with_items(app, &[&toggle, &quit_item])?;
 
-                let icon = app
-                    .default_window_icon()
-                    .cloned()
-                    .expect("no default window icon configured");
+                let icon = Image::from_bytes(include_bytes!("../icons/tray-icon.png"))
+                    .expect("failed to load tray icon");
 
                 TrayIconBuilder::new()
                     .icon(icon)

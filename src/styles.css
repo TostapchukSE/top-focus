@@ -1,5 +1,6 @@
 :root {
   --color-orange: #FF6B2B;
+  --color-orange-idle: #A07868;
   --color-dark: rgba(30, 30, 30, 0.98);
   --color-dark-surface: rgba(50, 50, 50, 0.8);
   --color-text-primary: rgba(255, 255, 255, 0.95);
@@ -52,12 +53,20 @@ html, body {
   position: relative;
   width: 300px;
   height: 60px;
-  background: var(--color-orange);
+  background: var(--color-orange-idle);
   border-radius: var(--widget-radius);
   box-shadow: var(--widget-shadow);
   opacity: var(--widget-opacity);
   overflow: hidden;
-  transition: width var(--anim), height var(--anim), background-color var(--anim);
+  transition: width var(--anim), height var(--anim), background-color var(--anim), box-shadow 150ms ease-out;
+}
+
+.widget:hover {
+  box-shadow: var(--widget-shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.widget.has-task {
+  background: var(--color-orange);
 }
 
 .widget.expanded {
@@ -77,7 +86,13 @@ html, body {
   opacity: 1;
   overflow: hidden;
   transition: opacity var(--anim);
-  cursor: default;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.compact-content:active {
+  cursor: grabbing;
 }
 
 .widget.expanded .compact-content {
@@ -94,6 +109,9 @@ html, body {
   word-break: break-word;
   flex: 1;
   transition: font-size 150ms ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
 }
 
 .task-text.has-task {
@@ -175,7 +193,13 @@ html, body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  cursor: default;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.expanded-header:active {
+  cursor: grabbing;
 }
 
 .expanded-title {
@@ -184,6 +208,9 @@ html, body {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
 }
 
 .btn-icon {
