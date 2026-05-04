@@ -77,13 +77,31 @@ async function storeSet(key, value) {
 
 async function restorePosition() {
   const saved = await storeGet(POSITION_KEY);
-  if (!saved || typeof saved.x !== 'number') return;
 
   const monitors = await window.__TAURI__.window.availableMonitors();
   if (!monitors?.length) return;
 
+  // Pick the primary monitor (fall back to first if API unavailable).
+  const primary =
+    (await window.__TAURI__.window.primaryMonitor?.()) || monitors[0];
+
   // Monitor positions/sizes from Tauri are in physical pixels;
   // convert to logical using each monitor's scaleFactor.
+  const centerOnPrimary = () => {
+    const sf = primary.scaleFactor || 1;
+    const x = (primary.position.x / sf) + (primary.size.width  / sf) / 2 - SIZE_COMPACT.w / 2;
+    const y = (primary.position.y / sf) + (primary.size.height / sf) / 2 - SIZE_COMPACT.h / 2;
+    return { x, y };
+  };
+
+  // First launch (no saved position) — center on the primary monitor.
+  if (!saved || typeof saved.x !== 'number') {
+    const { x, y } = centerOnPrimary();
+    await getWindow().setPosition(LogicalPosition(x, y));
+    await storeSet(POSITION_KEY, { x, y });
+    return;
+  }
+
   const onScreen = monitors.some(m => {
     const sf = m.scaleFactor || 1;
     const logicalW = m.size.width  / sf;
@@ -99,10 +117,7 @@ async function restorePosition() {
   if (onScreen) {
     await getWindow().setPosition(LogicalPosition(saved.x, saved.y));
   } else {
-    const p = monitors[0];
-    const sf = p.scaleFactor || 1;
-    const x = (p.position.x / sf) + (p.size.width / sf) - SIZE_COMPACT.w - 12;
-    const y = (p.position.y / sf) + 12;
+    const { x, y } = centerOnPrimary();
     await getWindow().setPosition(LogicalPosition(x, y));
     await storeSet(POSITION_KEY, { x, y });
   }
